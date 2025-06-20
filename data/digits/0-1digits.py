@@ -15,9 +15,9 @@ data_filename = "csv/train-%d-%d.txt" % (i,j)
 output_filename = "neuron/digits-%d-%d.neuron" % (i,j)
 
 # load dataset
-dataset = pd.read_csv(data_filename)
+dataset = pd.read_csv(data_filename,header=None)
 train_features = dataset
-train_labels = train_features.pop("1.48")
+train_labels = train_features.pop(784)
 
 # train neuron
 model = LogisticRegression(penalty='l1',solver='liblinear',C=.002,random_state=0) #tol=1e-8
