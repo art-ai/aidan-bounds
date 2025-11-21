@@ -10,6 +10,17 @@
 
 using namespace std;
 
+class IntPair {
+    public:
+        int a;
+        int b;
+        void accumulate(const IntPair& count) {
+            this->a += count.a;
+            this->b += count.b;
+        }
+        IntPair() : a(0), b(0) {}
+};
+
 class Bounds{
     private:
         int lower_bound, upper_bound;
@@ -42,7 +53,6 @@ class Bounds{
 class ThresholdTest{
     private:
         static int id_counter;
-        
         vector<int> weights;
         vector<int> indices;
         int threshold;
@@ -55,9 +65,10 @@ class ThresholdTest{
         }
 
     public:
-
-        int _count;
-        int id;    
+        std::vector<int> data;
+        int id;
+        std::vector<ThresholdTest> parents;
+        IntPair test_counts;
         ThresholdTest(const vector<int>& weights, int threshold,
                  const vector<int>& indices, int size, const Bounds& bounds)
             : weights(weights), threshold(threshold), indices(indices),
@@ -130,36 +141,35 @@ class ThresholdTest{
 
         int get_threshold() const { return threshold; }
 };
+
+
 class Counter {
     private:
-    int size;
+        int size;
         int passes = 0;
         int fails = 0;
         int count = 0;
         double start_time;
         std::vector<double> count_times;
-
-        static void add_counts(std::array<int, 2>& a, std::array<int, 2>& b) {
-            a[0] += b[0];
-            a[1] += b[1];
-        }
-
-        int propagate_count(ThresholdTest* test, std::vector<double> counts) {
+        
+        int propagate_count(ThresholdTest* test, IntPair* counts) {
             std::deque<ThresholdTest> queue;
             std::list<ThresholdTest> visited_tests;
             std::set<int> visited_ids;
 
+            test->test_counts.accumulate(*counts);
+            
             visited_tests.push_back(*test);
             visited_ids.insert(test->id);
-
+            
             int count;
             return count;
         }
     public:
         std::vector<int> pass_count;
         std::vector<int> fail_count;
-
 };     
+
 int ThresholdTest::id_counter = 0;
 
 int main() {
