@@ -65,9 +65,9 @@ class ThresholdTest{
         }
 
     public:
-        std::vector<int> data;
         int id;
         std::vector<ThresholdTest> parents;
+        IntPair _data;
         IntPair test_counts;
         ThresholdTest(const vector<int>& weights, int threshold,
                  const vector<int>& indices, int size, const Bounds& bounds)
@@ -153,15 +153,48 @@ class Counter {
         std::vector<double> count_times;
         
         int propagate_count(ThresholdTest* test, IntPair* counts) {
-            std::deque<ThresholdTest> queue;
-            std::list<ThresholdTest> visited_tests;
+            std::deque<ThresholdTest*> queue;
+            std::list<ThresholdTest*> visited_tests;
             std::set<int> visited_ids;
 
-            test->test_counts.accumulate(*counts);
-            
-            visited_tests.push_back(*test);
+            visited_tests.push_back(test);
             visited_ids.insert(test->id);
+
+            test->_data.accumulate(*counts);
+            test->test_counts.accumulate(*counts);
+
+            for (auto& parent : test->parents) {
+                parent._data.accumulate(test->_data);
+                parent.test_counts.accumulate(test->_data);
+
+                queue.push_back(&parent);
+            }
             
+            ThresholdTest* current_test = nullptr;
+            IntPair root_count;
+
+
+            while (!queue.empty()) {
+               current_test = queue.front();
+               queue.pop_front();
+
+               if (visited_ids.count(current_test->id)) {
+                   continue;
+               }
+
+               visited_tests.push_back(current_test);
+               visited_ids.insert(current_test->id);
+
+               root_count = current_test->_data;
+
+               for (auto& parent : current_test->parents) {
+                   parent._data.accumulate(current_test->_data);
+                   parent.test_counts.accumulate(current_test->_data);
+
+                   queue.push_back(&parent);
+               }
+
+            }
             int count;
             return count;
         }
