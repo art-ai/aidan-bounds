@@ -14,10 +14,13 @@ class IntPair {
     public:
         int a;
         int b;
+
         void accumulate(const IntPair& count) {
             this->a += count.a;
             this->b += count.b;
         }
+
+        IntPair(int one, int two) : a(one), b(two) {}
         IntPair() : a(0), b(0) {}
 };
 
@@ -45,9 +48,9 @@ class Bounds{
             return Bounds(lb, ub);
         }
 
-        pair<int, int> get_bounds() const {
-            return make_pair(lower_bound, upper_bound);
-    }
+        IntPair get_bounds() const {
+            return IntPair(this->lower_bound,this->upper_bound);
+        }
 };
 
 class ThresholdTest{
@@ -69,6 +72,7 @@ class ThresholdTest{
         std::vector<ThresholdTest> parents;
         IntPair _data;
         IntPair test_counts;
+
         ThresholdTest(const vector<int>& weights, int threshold,
                  const vector<int>& indices, int size, const Bounds& bounds)
             : weights(weights), threshold(threshold), indices(indices),
@@ -104,7 +108,6 @@ class ThresholdTest{
             Bounds nu_bounds(lb, ub);
 
             return make_shared<ThresholdTest>(weights, nu_threshold, indices, size - 1, nu_bounds);
-
         }
         
         // sorts weights by magnitude        
@@ -129,14 +132,14 @@ class ThresholdTest{
             return make_pair(indices, sorted_weights);
         }
 
-        bool trivial_pass() const {
+        bool is_trivial_pass() const {
             auto [lower, upper] = bounds.get_bounds();
-            return threshold <= lower && lower <= upper;
+            return threshold <= lower /* && lower <= upper */;
         }
 
-        bool trivial_fail() const {
+        bool is_trivial_fail() const {
             auto [lower, upper] = bounds.get_bounds();
-            return lower <= upper && upper < threshold;
+            return /*lower <= upper && */ upper < threshold;
         }
 
         int get_threshold() const { return threshold; }
@@ -213,8 +216,8 @@ int main() {
     auto test_1 = test.set_last(1);
     cout << "new threshold after set_last:  " << test_1->get_threshold() << endl;
 
-    if (test_1->trivial_pass()) cout << "trivial pass  " << endl;
-    if (test_1->trivial_fail()) cout << "trivial fail  " << endl;
+    if (test_1->is_trivial_pass()) cout << "trivial pass  " << endl;
+    if (test_1->is_trivial_fail()) cout << "trivial fail  " << endl;
 
     return 0;
 }

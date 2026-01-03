@@ -12,4 +12,6 @@ __pycache__/
 *.txt
 index.html
 texput.log
+valgrind.log
 threshold_test
+a.out
