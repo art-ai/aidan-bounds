@@ -1,17 +1,31 @@
 #include <iostream>
 #include <vector>
+#include <deque>
+#include <array>
+#include <set>
+#include <list>
 #include <memory>
 #include <algorithm>
 #include <utility>
-#include <stdexcept>
 
-using namespace std; 
+using namespace std;
+
+class IntPair {
+    public:
+        int a;
+        int b;
+        void accumulate(const IntPair& count) {
+            this->a += count.a;
+            this->b += count.b;
+        }
+        IntPair() : a(0), b(0) {}
+};
 
 class Bounds{
     private:
         int lower_bound, upper_bound;
-    
-    public:     
+
+    public:
         Bounds(int lb, int ub) : lower_bound(lb), upper_bound(ub) {}
 
         static Bounds from_weights(const vector<int>& weights, int size) {
@@ -29,7 +43,7 @@ class Bounds{
                 }
             }
             return Bounds(lb, ub);
-        } 
+        }
 
         pair<int, int> get_bounds() const {
             return make_pair(lower_bound, upper_bound);
@@ -39,10 +53,9 @@ class Bounds{
 class ThresholdTest{
     private:
         static int id_counter;
-        int id;
         vector<int> weights;
         vector<int> indices;
-        int threshold; 
+        int threshold;
         int size;
         Bounds bounds;
 
@@ -50,8 +63,12 @@ class ThresholdTest{
         static int new_id() {
             return id_counter++;
         }
-        
+
     public:
+        int id;
+        std::vector<ThresholdTest> parents;
+        IntPair _data;
+        IntPair test_counts;
         ThresholdTest(const vector<int>& weights, int threshold,
                  const vector<int>& indices, int size, const Bounds& bounds)
             : weights(weights), threshold(threshold), indices(indices),
@@ -59,15 +76,16 @@ class ThresholdTest{
 
         ThresholdTest(const vector<int>& weights, int threshold)
             : weights(weights), threshold(threshold), indices(),
-              size(weights.size()), 
+              size(weights.size()),
               bounds(Bounds::from_weights(weights, weights.size())),
               id(ThresholdTest::new_id()) {}
 
-        // gets last weight from list 
+        // gets last weight from list
         int get_last() const {
             return weights[size - 1];
         }
-
+        
+        // sets last weight to either 0 or 1 and creates updated test 
         shared_ptr<ThresholdTest> set_last(int value) const {
             int last_weight = get_last();
             int nu_threshold = threshold;
@@ -88,7 +106,8 @@ class ThresholdTest{
             return make_shared<ThresholdTest>(weights, nu_threshold, indices, size - 1, nu_bounds);
 
         }
-
+        
+        // sorts weights by magnitude        
         static pair<vector<int>, vector<int>> sort_weights(const vector<int>& weights) {
             vector<pair<int, int>> indexed_weights;
             for (size_t i = 0; i < weights.size(); i++) {
@@ -123,20 +142,79 @@ class ThresholdTest{
         int get_threshold() const { return threshold; }
 };
 
-int ThresholdTest::id_counter = 0;
 
+class Counter {
+    private:
+        int size;
+        int passes = 0;
+        int fails = 0;
+        int count = 0;
+        double start_time;
+        std::vector<double> count_times;
+        
+        int propagate_count(ThresholdTest* test, IntPair* counts) {
+            std::deque<ThresholdTest*> queue;
+            std::list<ThresholdTest*> visited_tests;
+            std::set<int> visited_ids;
+
+            visited_tests.push_back(test);
+            visited_ids.insert(test->id);
+
+            test->_data.accumulate(*counts);
+            test->test_counts.accumulate(*counts);
+
+            for (auto& parent : test->parents) {
+                parent._data.accumulate(test->_data);
+                parent.test_counts.accumulate(test->_data);
+
+                queue.push_back(&parent);
+            }
+            
+            ThresholdTest* current_test = nullptr;
+            IntPair root_count;
+
+
+            while (!queue.empty()) {
+               current_test = queue.front();
+               queue.pop_front();
+
+               if (visited_ids.count(current_test->id)) {
+                   continue;
+               }
+
+               visited_tests.push_back(current_test);
+               visited_ids.insert(current_test->id);
+
+               root_count = current_test->_data;
+
+               for (auto& parent : current_test->parents) {
+                   parent._data.accumulate(current_test->_data);
+                   parent.test_counts.accumulate(current_test->_data);
+
+                   queue.push_back(&parent);
+               }
+
+            }
+            int count;
+            return count;
+        }
+    public:
+        std::vector<int> pass_count;
+        std::vector<int> fail_count;
+};     
+
+int ThresholdTest::id_counter = 0;
 
 int main() {
     vector<int> weights = {2, -1, 3};
-    
+
     ThresholdTest test(weights, 2);
     cout << "original threshold:  " << test.get_threshold() << endl;
     auto test_1 = test.set_last(1);
-    cout << "nu threshold after set_last:  " << test_1->get_threshold() << endl;
+    cout << "new threshold after set_last:  " << test_1->get_threshold() << endl;
 
     if (test_1->trivial_pass()) cout << "trivial pass  " << endl;
     if (test_1->trivial_fail()) cout << "trivial fail  " << endl;
 
     return 0;
 }
-
